@@ -169,6 +169,7 @@ body {
 
 .hud-panel:hover {
   border-color: var(--hud-border-bright);
+  box-shadow: 0 0 12px -4px var(--hud-primary-glow);
 }
 
 .hud-panel-title {
@@ -247,8 +248,8 @@ body {
     0deg,
     transparent,
     transparent 2px,
-    rgba(0, 0, 0, 0.06) 2px,
-    rgba(0, 0, 0, 0.06) 4px
+    rgba(0, 0, 0, 0.12) 2px,
+    rgba(0, 0, 0, 0.12) 4px
   );
   pointer-events: none;
   z-index: 9999;

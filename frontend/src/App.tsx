@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { ThemeProvider } from './hooks/useTheme'
 import TopBar, { type TabId } from './components/TopBar'
+import BootScreen from './components/BootScreen'
 import DashboardPanel from './components/DashboardPanel'
 import MemoryPanel from './components/MemoryPanel'
 import SkillsPanel from './components/SkillsPanel'
@@ -26,12 +27,12 @@ function TabContent({ tab }: { tab: TabId }) {
   }
 }
 
-// Grid layout configs per tab
+// Grid layout per tab — tuned for information density
 const GRID_CLASS: Record<TabId, string> = {
-  dashboard: 'grid-cols-3 grid-rows-[1fr_1fr]',
+  dashboard: 'grid-cols-3 grid-rows-2',
   memory: 'grid-cols-2',
-  skills: 'grid-cols-3',
-  sessions: 'grid-cols-3',
+  skills: 'grid-cols-[2fr_1fr]',
+  sessions: 'grid-cols-[2fr_1fr]',
   cron: 'grid-cols-1',
   projects: 'grid-cols-1',
   health: 'grid-cols-2',
@@ -41,9 +42,18 @@ const GRID_CLASS: Record<TabId, string> = {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard')
+  const [booted, setBooted] = useState(() => {
+    return sessionStorage.getItem('hud-booted') === 'true'
+  })
+
+  const handleBootComplete = useCallback(() => {
+    setBooted(true)
+    sessionStorage.setItem('hud-booted', 'true')
+  }, [])
 
   return (
     <ThemeProvider>
+      {!booted && <BootScreen onComplete={handleBootComplete} />}
       <TopBar activeTab={activeTab} onTabChange={setActiveTab} />
       <main className={`flex-1 grid gap-2 p-2 overflow-auto auto-rows-fr ${GRID_CLASS[activeTab]}`}
             style={{ minHeight: 0 }}>

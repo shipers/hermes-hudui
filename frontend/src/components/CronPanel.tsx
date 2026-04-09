@@ -1,6 +1,19 @@
 import { useApi } from '../hooks/useApi'
 import Panel from './Panel'
 
+function timeAgo(iso: string): string {
+  if (!iso) return 'never'
+  const d = new Date(iso)
+  const now = new Date()
+  const diffMs = now.getTime() - d.getTime()
+  const mins = Math.floor(diffMs / 60000)
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  return `${days}d ago`
+}
+
 export default function CronPanel() {
   const { data, isLoading } = useApi('/cron', 30000)
 
@@ -9,32 +22,73 @@ export default function CronPanel() {
   }
 
   const jobs = data.jobs || data || []
-  if (!Array.isArray(jobs)) {
-    return <Panel title="Cron Jobs" className="col-span-full"><div className="text-[10px]" style={{ color: 'var(--hud-text-dim)' }}>No cron data</div></Panel>
+  if (!Array.isArray(jobs) || jobs.length === 0) {
+    return <Panel title="Cron Jobs" className="col-span-full"><div className="text-[10px]" style={{ color: 'var(--hud-text-dim)' }}>No cron jobs configured</div></Panel>
   }
 
   return (
     <Panel title="Cron Jobs" className="col-span-full">
-      <div className="text-[10px]">
-        <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-x-4 gap-y-1">
-          <div className="uppercase tracking-wider font-bold" style={{ color: 'var(--hud-text-dim)' }}>Status</div>
-          <div className="uppercase tracking-wider font-bold" style={{ color: 'var(--hud-text-dim)' }}>Name / Prompt</div>
-          <div className="uppercase tracking-wider font-bold" style={{ color: 'var(--hud-text-dim)' }}>Schedule</div>
-          <div className="uppercase tracking-wider font-bold" style={{ color: 'var(--hud-text-dim)' }}>Last Run</div>
-          <div className="uppercase tracking-wider font-bold" style={{ color: 'var(--hud-text-dim)' }}>Deliver</div>
-          {jobs.map((job: any, i: number) => (
-            <div key={i} className="contents">
-              <div>
-                <span className="inline-block w-2 h-2 rounded-full"
-                  style={{ background: job.paused ? 'var(--hud-text-dim)' : 'var(--hud-success)' }} />
+      <div className="space-y-3">
+        {jobs.map((job: any) => {
+          const isActive = job.enabled && !job.paused_reason
+          return (
+            <div key={job.id} className="p-3" style={{ background: 'var(--hud-bg-panel)', border: '1px solid var(--hud-border)' }}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ background: isActive ? 'var(--hud-success)' : 'var(--hud-text-dim)' }} />
+                <span className="font-bold text-[11px]" style={{ color: 'var(--hud-primary)' }}>
+                  {job.name || job.id}
+                </span>
+                <span className="text-[9px] px-1.5 py-0.5 ml-auto"
+                  style={{
+                    background: 'var(--hud-bg-hover)',
+                    color: job.state === 'scheduled' ? 'var(--hud-success)' : 'var(--hud-text-dim)'
+                  }}>
+                  {job.state || 'unknown'}
+                </span>
               </div>
-              <div className="truncate">{job.name || job.prompt?.slice(0, 60) || job.id}</div>
-              <div style={{ color: 'var(--hud-primary)' }}>{job.schedule || '-'}</div>
-              <div style={{ color: 'var(--hud-text-dim)' }}>{job.last_run ? new Date(job.last_run).toLocaleString() : 'never'}</div>
-              <div style={{ color: 'var(--hud-text-dim)' }}>{job.deliver || '-'}</div>
+
+              <div className="grid grid-cols-4 gap-4 text-[10px]">
+                <div>
+                  <div className="uppercase tracking-wider" style={{ color: 'var(--hud-text-dim)', fontSize: '9px' }}>Schedule</div>
+                  <div style={{ color: 'var(--hud-primary)' }}>{job.schedule_display || job.schedule || '-'}</div>
+                </div>
+                <div>
+                  <div className="uppercase tracking-wider" style={{ color: 'var(--hud-text-dim)', fontSize: '9px' }}>Last Run</div>
+                  <div>
+                    {job.last_run_at ? timeAgo(job.last_run_at) : 'never'}
+                    {job.last_status && (
+                      <span className="ml-1" style={{ color: job.last_status === 'ok' ? 'var(--hud-success)' : 'var(--hud-error)' }}>
+                        {job.last_status === 'ok' ? '✔' : '✗'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div className="uppercase tracking-wider" style={{ color: 'var(--hud-text-dim)', fontSize: '9px' }}>Next Run</div>
+                  <div>{job.next_run_at ? new Date(job.next_run_at).toLocaleString() : '-'}</div>
+                </div>
+                <div>
+                  <div className="uppercase tracking-wider" style={{ color: 'var(--hud-text-dim)', fontSize: '9px' }}>Deliver</div>
+                  <div style={{ color: 'var(--hud-accent)' }}>{job.deliver || '-'}</div>
+                </div>
+              </div>
+
+              {job.repeat_completed != null && (
+                <div className="mt-2 text-[9px]" style={{ color: 'var(--hud-text-dim)' }}>
+                  Runs completed: {job.repeat_completed}{job.repeat_total ? ` / ${job.repeat_total}` : ''}
+                  {job.skills?.length > 0 && <span className="ml-2">Skills: {job.skills.join(', ')}</span>}
+                </div>
+              )}
+
+              {job.prompt && (
+                <div className="mt-2 text-[10px] truncate" style={{ color: 'var(--hud-text-dim)' }}>
+                  {job.prompt.slice(0, 120)}...
+                </div>
+              )}
             </div>
-          ))}
-        </div>
+          )
+        })}
       </div>
     </Panel>
   )
