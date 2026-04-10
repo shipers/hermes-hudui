@@ -1,0 +1,11 @@
+services:
+  hermes-hudui:
+    build: .
+    ports:
+      - "${PORT:-3001}:${PORT:-3001}"
+    volumes:
+      - ${HERMES_HOME:-~/.hermes}:/root/.hermes:ro
+    environment:
+      - HERMES_HOME=/root/.hermes
+    command: ["--host", "0.0.0.0", "--port", "${PORT:-3001}"]
+    restart: unless-stopped
