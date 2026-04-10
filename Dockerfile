@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir -e .
 # Copy built frontend into backend static dir
 COPY --from=frontend-build /app/frontend/dist/ ./backend/static/
 
-EXPOSE 3001
+ENV PORT=3001
+EXPOSE ${PORT}
 
-ENTRYPOINT ["hermes-hudui"]
-CMD ["--host", "0.0.0.0", "--port", "3001"]
+CMD hermes-hudui --host 0.0.0.0 --port ${PORT}
